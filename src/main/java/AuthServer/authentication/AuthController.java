@@ -15,9 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/auth")
@@ -42,16 +43,17 @@ public class AuthController {
 
     private String generateToken(Authentication authentication) {
         Instant now = Instant.now();
-        String scope = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(" "));
+
+        List<String> rights = new ArrayList<>();
+        rights.add("USER");
+        rights.add("ADMIN");
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("http://localhost:9000")
                 .issuedAt(now)
                 .expiresAt(now.plus(1, ChronoUnit.HOURS))
                 .subject(authentication.getName())
-                .claim("scope", scope)
+                .claim("rights", rights)
                 .build();
 
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
