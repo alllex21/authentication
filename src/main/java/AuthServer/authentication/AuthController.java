@@ -54,7 +54,6 @@ public class AuthController {
                 .claim("scope", scope)
                 .build();
 
-        //JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256).build();
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 }
