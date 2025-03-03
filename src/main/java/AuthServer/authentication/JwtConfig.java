@@ -21,18 +21,16 @@ import com.nimbusds.jose.proc.SecurityContext;
 @Configuration
 public class JwtConfig {
 
-    // Helper method to generate an RSA key pair.
-    public KeyPair generateRsaKey() throws Exception {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(2048);
-        return keyPairGenerator.generateKeyPair();
+    private final RsaKeyProperties rsaKeys;
+
+    public JwtConfig(RsaKeyProperties rsaKeys) {
+        this.rsaKeys = rsaKeys;
     }
 
     @Bean
     public JWKSource<SecurityContext> jwkSource() throws Exception {
-        KeyPair keyPair = generateRsaKey(); // Your method to generate RSA key pair
-        RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
-                .privateKey((RSAPrivateKey) keyPair.getPrivate())
+        RSAKey rsaKey = new RSAKey.Builder(rsaKeys.publicKey())
+                .privateKey(rsaKeys.privateKey())
                 .keyID("my-rsa-key")
                 .algorithm(JWSAlgorithm.RS256)
                 .build();
