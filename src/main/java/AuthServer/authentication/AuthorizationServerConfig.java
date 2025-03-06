@@ -1,14 +1,18 @@
 package AuthServer.authentication;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
@@ -20,31 +24,7 @@ import java.util.UUID;
 
 @Configuration
 public class AuthorizationServerConfig {
-
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//
-//        // Create a new OAuth2AuthorizationServerConfigurer instance
-//        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-//                new OAuth2AuthorizationServerConfigurer();
-//
-//        RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
-//
-//        http
-//                .securityMatcher(endpointsMatcher)
-//                // Disable CSRF for simplicity (enable it in production as needed)
-//                .csrf(csrf -> csrf.disable())
-//                // Permit access to the login endpoint without authentication
-//                .authorizeHttpRequests(authorize -> authorize
-//                        .requestMatchers("/auth/login").permitAll()
-//                        .anyRequest().authenticated()
-//                )
-//                // Disable form login so that Spring Security does not redirect to a login page
-//                .formLogin(form -> form.disable())
-//                // Optionally, you can enable HTTP Basic authentication if needed
-//                .httpBasic(Customizer.withDefaults());
-//        return http.build();
-//    }
+    private static final Logger logger = LoggerFactory.getLogger(AuthorizationServerConfig.class);
 
     @Bean
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -59,7 +39,10 @@ public class AuthorizationServerConfig {
                 // Only apply security rules to endpoints managed by the authorization server
                 .securityMatcher(endpointsMatcher)
                 // Configure authorization: all requests must be authenticated
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+                .authorizeHttpRequests(authorize ->
+                        authorize
+                                .requestMatchers("/oauth2/token").permitAll()
+                                .anyRequest().authenticated())
                 // Disable CSRF protection on these endpoints
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 // Apply the authorization server configuration, which registers all necessary endpoints including /oauth2/jwks
@@ -71,12 +54,16 @@ public class AuthorizationServerConfig {
 
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
-        RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
+        RegisteredClient client = RegisteredClient.withId("my-client")
                 .clientId("my-client")
                 .clientSecret("{noop}my-secret")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.PASSWORD)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .tokenSettings(TokenSettings.builder().accessTokenTimeToLive(Duration.ofHours(1)).build())
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofHours(1))
+                        .refreshTokenTimeToLive(Duration.ofDays(1))
+                        .build())
                 .scope("read")
                 .scope("write")
                 .build();
@@ -86,7 +73,14 @@ public class AuthorizationServerConfig {
 
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
-        return AuthorizationServerSettings.builder().build();
+        return AuthorizationServerSettings.builder()
+                .issuer("http://localhost:9000") // Adjust to your issuer URL
+                .build();
+    }
+
+    @Bean
+    public OAuth2AuthorizationService authorizationService(RegisteredClientRepository registeredClientRepository) {
+        return new InMemoryOAuth2AuthorizationService();
     }
 }
 
