@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
-@EnableConfigurationProperties(RsaKeyProperties.class)
 @SpringBootApplication
 public class AuthenticationApplication {
 
