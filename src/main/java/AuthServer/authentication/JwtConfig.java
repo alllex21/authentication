@@ -17,7 +17,6 @@ import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.token.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -79,9 +78,8 @@ public class JwtConfig {
         log.info("Custom JWT tokenGenerator");
 
         // jwtGenerator uses its own customizer type, so it can remain as is or be separately defined
-
         OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
-//        accessTokenGenerator.setAccessTokenCustomizer(accessTokenCustomizer);
+        // accessTokenGenerator.setAccessTokenCustomizer(accessTokenCustomizer);
 
         OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
 

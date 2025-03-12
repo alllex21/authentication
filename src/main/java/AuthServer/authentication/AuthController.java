@@ -1,56 +1,48 @@
 package AuthServer.authentication;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContext;
-import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContextHolder;
-import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final TokenService tokenService;
-    private final AuthorizationServerSettings authorizationServerSettings;
+    private final ThirdPartyAuthenticationProvider authenticationManager;
 
-    public AuthController(AuthenticationManager authenticationManager, TokenService tokenService, AuthorizationServerSettings authorizationServerSettings) {
+    public AuthController(ThirdPartyAuthenticationProvider authenticationManager) {
         this.authenticationManager = authenticationManager;
-        this.tokenService = tokenService;
-        this.authorizationServerSettings = authorizationServerSettings;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody AuthRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+    public ResponseEntity<?> login(HttpServletResponse httpResponse, HttpServletRequest httpRequest, @RequestBody AuthRequest request) {
+        UsernamePasswordAuthenticationToken authToken =
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword());
 
-        AuthorizationServerContext context = new AuthorizationServerContext() {
-            @Override
-            public String getIssuer() {
-                return authorizationServerSettings.getIssuer();
-            }
-
-            @Override
-            public AuthorizationServerSettings getAuthorizationServerSettings() {
-                return authorizationServerSettings;
-            }
-        };
-        AuthorizationServerContextHolder.setContext(context);
         try {
-            Map<String, String> token = tokenService.generateToken2(authentication);
-            return ResponseEntity.ok(token);
-        } finally {
-            AuthorizationServerContextHolder.resetContext();
+            // Delegate authentication to the AuthenticationManager which uses our custom provider
+            Authentication auth = authenticationManager.authenticate(authToken);
+            // On success, store the authentication in the SecurityContext
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+            String origin = httpRequest.getHeader(HttpHeaders.ORIGIN);
+            httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
+
+            httpResponse.setHeader("Access-Control-Allow-Origin", origin);
+            return new ResponseEntity<>("login successful", HttpStatus.OK);
+        } catch (AuthenticationException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
     }
 }
