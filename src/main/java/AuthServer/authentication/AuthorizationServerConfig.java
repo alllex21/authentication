@@ -1,7 +1,6 @@
 package AuthServer.authentication;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -20,12 +19,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.time.Duration;
-import java.util.UUID;
 
 @Configuration
 public class AuthorizationServerConfig {
-    private static final Logger logger = LoggerFactory.getLogger(AuthorizationServerConfig.class);
 
+    @Value("${spring.security.oauth2.authorization-server.issuer-url}")
+    private String issuer;
+
+    //TODO Security filter change needs to be reviewed in case we don't use /oauth2/* endpoints!!!!
     @Bean
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         // Create a new OAuth2AuthorizationServerConfigurer instance
@@ -58,7 +59,7 @@ public class AuthorizationServerConfig {
                 .clientId("my-client")
                 .clientSecret("{noop}my-secret")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.PASSWORD)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .tokenSettings(TokenSettings.builder()
                         .accessTokenTimeToLive(Duration.ofHours(1))
@@ -74,7 +75,7 @@ public class AuthorizationServerConfig {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://localhost:9000") // Adjust to your issuer URL
+                .issuer(issuer)
                 .build();
     }
 

@@ -17,7 +17,6 @@ import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.token.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,7 +30,7 @@ public class JwtConfig {
     }
 
     @Bean
-    public JWKSource<SecurityContext> jwkSource() throws Exception {
+    public JWKSource<SecurityContext> jwkSource() {
         RSAKey rsaKey = new RSAKey.Builder(rsaKeys.publicKey())
                 .privateKey(rsaKeys.privateKey())
                 .keyID("my-rsa-key")
@@ -49,20 +48,19 @@ public class JwtConfig {
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
         return context -> {
-            log.info("Inside jwtCustomizer for token type: {}", context.getTokenType());
-
             if (OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType())) {
                 Authentication authentication = context.getPrincipal();
                 if (authentication != null) {
                     // Extract rights from the principal's authorities
                     List<String> rights = authentication.getAuthorities().stream()
-                            .map(GrantedAuthority::getAuthority) // Get authority as string
+                            .map(GrantedAuthority::getAuthority)
                             .collect(Collectors.toList());
 
                     log.info("Processed rights for user {}: {}", authentication.getName(), rights);
-
-                    context.getClaims().claim("rights", rights);  // Set the "rights" claim
+                    // Set the "rights" claim
+                    context.getClaims().claim("rights", rights);
                 } else {
+                    //TODO this probably shouldn't be here
                     log.warn("No authentication principal found");
                     context.getClaims().claim("rights", List.of("USER")); // Fallback
                 }
@@ -74,14 +72,9 @@ public class JwtConfig {
     public OAuth2TokenGenerator<?> tokenGenerator(JwtEncoder jwtEncoder,
                                                   OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer) {
         JwtGenerator jwtGenerator = new JwtGenerator(jwtEncoder);
-        jwtGenerator.setJwtCustomizer(jwtCustomizer); // Set the customizer here
-
-        log.info("Custom JWT tokenGenerator");
-
-        // jwtGenerator uses its own customizer type, so it can remain as is or be separately defined
+        jwtGenerator.setJwtCustomizer(jwtCustomizer);
 
         OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
-//        accessTokenGenerator.setAccessTokenCustomizer(accessTokenCustomizer);
 
         OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
 

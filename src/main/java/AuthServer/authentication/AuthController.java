@@ -1,56 +1,38 @@
 package AuthServer.authentication;
 
+import AuthServer.authentication.requests.AuthRequest;
+import AuthServer.authentication.requests.RefreshRequest;
+import AuthServer.authentication.users.LoginService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContext;
 import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContextHolder;
-import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
-    private final AuthorizationServerSettings authorizationServerSettings;
+    private final LoginService loginService;
 
-    public AuthController(AuthenticationManager authenticationManager, TokenService tokenService, AuthorizationServerSettings authorizationServerSettings) {
-        this.authenticationManager = authenticationManager;
+    public AuthController(TokenService tokenService, LoginService loginService) {
         this.tokenService = tokenService;
-        this.authorizationServerSettings = authorizationServerSettings;
+        this.loginService = loginService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody AuthRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
-
-        AuthorizationServerContext context = new AuthorizationServerContext() {
-            @Override
-            public String getIssuer() {
-                return authorizationServerSettings.getIssuer();
-            }
-
-            @Override
-            public AuthorizationServerSettings getAuthorizationServerSettings() {
-                return authorizationServerSettings;
-            }
-        };
-        AuthorizationServerContextHolder.setContext(context);
-        try {
-            Map<String, String> token = tokenService.generateToken2(authentication);
+            Map<String, String> token = loginService.loginUser(request);
             return ResponseEntity.ok(token);
-        } finally {
-            AuthorizationServerContextHolder.resetContext();
-        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<Map<String, String>> refresh(@RequestBody RefreshRequest request) {
+        Map<String, String> token = tokenService.refreshAccessToken(request.getRefreshToken());
+        return ResponseEntity.ok(token);
     }
 }

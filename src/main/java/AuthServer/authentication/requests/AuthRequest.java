@@ -1,4 +1,4 @@
-package AuthServer.authentication;
+package AuthServer.authentication.requests;
 
 import lombok.Data;
 
