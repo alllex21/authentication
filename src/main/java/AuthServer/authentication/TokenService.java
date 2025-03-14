@@ -55,14 +55,11 @@ public class TokenService {
         this.authenticationManager = authenticationManager;
     }
 
-    public Map<String, String> generateToken(UserDetails user) {
+    public Map<String, String> generateToken(Authentication authentication, UserDetails user) {
         AuthorizationServerContextHolder.setContext(getContext());
 
         try {
             RegisteredClient registeredClient = registeredClientRepository.findByClientId("my-client");
-
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 
             OAuth2Authorization.Builder authorizationBuilder =
                     OAuth2Authorization.withRegisteredClient(registeredClient)

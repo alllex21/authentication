@@ -21,12 +21,12 @@ public class AuthenticationManagerConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        String defaultEncodingId = "noop"; // Switch default to BCrypt
-        Map<String, PasswordEncoder> encoders = new HashMap<>();
-        encoders.put("noop", NoOpPasswordEncoder.getInstance());
-        return new DelegatingPasswordEncoder(defaultEncodingId, encoders);
-    }
+//    @Bean
+//    public PasswordEncoder passwordEncoder() {
+//        String defaultEncodingId = "noop"; // Switch default to BCrypt
+//        Map<String, PasswordEncoder> encoders = new HashMap<>();
+//        encoders.put("noop", NoOpPasswordEncoder.getInstance());
+//        return new DelegatingPasswordEncoder(defaultEncodingId, encoders);
+//    }
 }
 
